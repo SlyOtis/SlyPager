@@ -1,42 +1,54 @@
 import {
   AfterViewInit,
-  Component, ComponentFactoryResolver, ElementRef, HostBinding, HostListener, Inject, Input, OnInit, Renderer2,
-  ViewChild, ViewChildren, ViewContainerRef
+  Component, ElementRef, HostListener, Input, OnInit,
+  Renderer2,
+  ViewChild
 } from '@angular/core';
 import * as Hammer from 'hammerjs';
+import {SlyPagerPageComponent} from '../sly-pager-page/sly-pager-page.component';
+import {
+  SlyPagerIndex, SlyPagerWrapperComponent,
+  SlyPagerWrapperConfig
+} from './sly-pager-wrapper/sly-pager-wrapper.component';
 
-export interface SlyPagerPage {
-  element: HTMLElement;
-  index?: number;
-  pageNumber: number;
-  component?: any;
-}
 export enum SlyPagerDirection {
   DIRECTION_VERTICAL = Hammer.DIRECTION_VERTICAL,
   DIRECTION_HORIZONTAL = Hammer.DIRECTION_HORIZONTAL
 }
 @Component({
-  selector: 'app-sly-pager',
+  selector: 'app-sly-pager, [app-sly-pager]',
   templateUrl: './sly-pager.component.html',
+  entryComponents: [SlyPagerPageComponent],
   styleUrls: ['./sly-pager.component.css']
 })
 export class SlyPagerComponent implements OnInit, AfterViewInit {
 
-  @ViewChild('sly-pager-wrapper', { read: ViewContainerRef }) wrapperRef: ViewContainerRef;
-
-  private _swipeThreshold = 0.10;
+  @ViewChild(SlyPagerWrapperComponent) wrapper: SlyPagerWrapperComponent;
+  private _swipeThreshold = 0.75;
   private _scrollDirection: SlyPagerDirection = SlyPagerDirection.DIRECTION_HORIZONTAL;
   private hammer: HammerManager;
-  private _wrapper: HTMLElement;
   private _container: HTMLElement;
-  private _pages: SlyPagerPage[];
-  private _pageIndex: number;
-  private _index: number;
-  private _maxItemCount: number;
-  private _maxPageCount = 5;
-  private _pageIndexCenter: number;
-  private _pageSize: number;
-  private _pageOffsetSide: string;
+  private _index: SlyPagerIndex;
+  private config: SlyPagerWrapperConfig = {
+    startIndex: {index: 2, window: {id: 0, size: 10}},
+    onCreateComponent: (index) => {
+      return SlyPagerPageComponent;
+    },
+    onWindowEndReached: (overshoot, currWindow) => {
+      return {index: overshoot, window: currWindow};
+    },
+    onWindowStartReached: (overshoot, currWindow) => {
+      return {index: overshoot, window: currWindow};
+    },
+    scrollDirection: 'horizontal',
+    onBindComponent: (index, component) => {
+
+    },
+    mode: 'infinite',
+    size: () => {
+      return this.getSize();
+    }
+  };
 
   @HostListener('window:resize', ['$event'])
   onResize(event) {
@@ -62,90 +74,24 @@ export class SlyPagerComponent implements OnInit, AfterViewInit {
   }
 
   constructor(private elRef: ElementRef,
-              private renderer: Renderer2,
-              private resolver: ComponentFactoryResolver) {
+              private renderer: Renderer2) {
   }
 
   ngOnInit() {
-    this._wrapper = this.elRef.nativeElement.querySelector('.sly-pager-wrapper');
     this._container = this.elRef.nativeElement.querySelector('.sly-pager-container');
-    this.initHammer(this._wrapper);
-    this.initPages();
-    this.initIndexes();
-    this.initialize();
+    this.initHammer(this._container);
   }
 
   ngAfterViewInit(): void {
-
+    this.wrapper.initialize(this.config);
   }
 
-  private initPages() {
-
-    this._pages = [];
-    const tmp_pages = this._wrapper.querySelectorAll('.sly-pager-page');
-    for (let i = 0; i < tmp_pages.length; i++) {
-      this._pages.push(this.setPagePosAndSize({element: <HTMLElement>tmp_pages[i], pageNumber: i}));
-    }
-
-    if (!this._pages) {
-      for (let i = 0; i < this._maxPageCount; i++) {
-        const elem = <HTMLElement>this.renderer.createElement('div');
-        elem.className = 'sly-pager-page';
-        this._wrapper.appendChild(elem);
-        this._pages.push(this.setPagePosAndSize({element: elem, pageNumber: i}));
-      }
-    }
-    if (this._pages.length > this._maxPageCount) {
-      // TODO:: Prompt error or extend
-    }
-    if (this._pages.length < this._maxPageCount) {
-      for (let i = this._pages.length; i < this._maxPageCount; i++) {
-        const elem = <HTMLElement>this.renderer.createElement('div');
-        elem.className = 'sly-pager-page';
-        elem.style.backgroundColor = this.getRandomColor();
-        this._wrapper.appendChild(elem);
-        this._pages.push(this.setPagePosAndSize({element: elem, pageNumber: i}));
-      }
-    }
+  private getSize(): {width: number, height: number} {
+    return {width: this._container.offsetWidth, height: this._container.offsetHeight};
   }
 
   private updateSizes() {
 
-  }
-
-  private setPagePosAndSize(page: SlyPagerPage): SlyPagerPage {
-    this.renderer.setStyle(page.element, 'width', this._container.offsetWidth + 'px');
-    this.renderer.setStyle(page.element, 'height', this._container.offsetHeight + 'px');
-    this.renderer.setStyle(page.element, 'left', this._container.offsetWidth * page.pageNumber + 'px');
-    return page;
-  }
-
-  private getRandomColor() {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-      color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
-  }
-
-  private initIndexes() {
-    // TODO:: Make this proper for even numbered page count.
-    this._pageIndexCenter = Math.floor(this._maxPageCount / 2) + 1;
-    this._pageIndex = this._pageIndexCenter;
-
-  }
-
-  public initialize() {
-    this.setWrapperIndex(this._pageIndex);
-  }
-
-  private setWrapperIndex(index: number) {
-    this.renderer.setStyle(this._wrapper, this._pageOffsetSide, - (index * this._pageSize) + 'px');
-  }
-
-  private setWrapperPos(pos: number) {
-    this.renderer.setStyle(this._wrapper, this._pageOffsetSide, - pos + 'px');
   }
 
   private initHammer(wrapper: EventTarget) {
@@ -158,8 +104,8 @@ export class SlyPagerComponent implements OnInit, AfterViewInit {
     });
 
     this.hammer.on('panstart', (ev) => this.onPanStart(ev));
-    this.hammer.on('panend', (ev) => this.onPanEnd(ev));
-    this.hammer.on('pancancel', (ev) => this.onPanCancel(ev));
+    this.hammer.on('panend', (ev) => this.onPanEndCancel(ev));
+    this.hammer.on('pancancel', (ev) => this.onPanEndCancel(ev));
 
     this.initDirectional();
   }
@@ -167,12 +113,8 @@ export class SlyPagerComponent implements OnInit, AfterViewInit {
   private initDirectional() {
     if (this._scrollDirection === SlyPagerDirection.DIRECTION_HORIZONTAL) {
       this.initHorizontalListeners();
-      this._pageSize = this._container.offsetWidth;
-      this._pageOffsetSide = 'left';
     } else {
       this.initVerticalListeners();
-      this._pageSize = this._container.offsetHeight;
-      this._pageOffsetSide = 'top';
     }
   }
 
@@ -236,29 +178,55 @@ export class SlyPagerComponent implements OnInit, AfterViewInit {
   onPanLeft(event: any) {
     event.preventDefault();
     console.log('Pan left ' + event.deltaX);
+    this.wrapper.setTranslation(event.deltaX);
   }
 
   onPanRight(event: any) {
     event.preventDefault();
     console.log('Pan right ' + event.deltaX);
+    this.wrapper.setTranslation(event.deltaX);
   }
 
   onPanUp(event: any) {
     event.preventDefault();
-    console.log('Pan up ' + event.deltaX);
+    console.log('Pan up ' + event.deltaY);
+    this.wrapper.setTranslation(event.deltaY);
   }
 
   onPanDown(event: any) {
     event.preventDefault();
-    console.log('Pan down ' + event.deltaX);
+    console.log('Pan down ' + event.deltaY);
+    this.wrapper.setTranslation(event.deltaY);
   }
 
-  onPanEnd(event: any) {
+  onPanEndCancel(event: any) {
     event.preventDefault();
-  }
-
-  onPanCancel(event: any) {
-    event.preventDefault();
+    if (this._scrollDirection === SlyPagerDirection.DIRECTION_HORIZONTAL) {
+      if (event.deltaX > 0) {
+        if (event.deltaX > this._swipeThreshold * this.getSize().width) {
+          this.wrapper.goToPrevious();
+          return;
+        }
+      } else if (event.deltaX < 0) {
+        if (Math.abs(event.deltaX) > this._swipeThreshold * this.getSize().width) {
+          this.wrapper.goToNext();
+          return;
+        }
+      }
+    } else {
+      if (event.deltaY > 0) {
+        if (event.deltaY > this._swipeThreshold * this.getSize().height) {
+          this.wrapper.goToNext();
+          return;
+        }
+      } else if (event.deltaY < 0) {
+        if (Math.abs(event.deltaY) > this._swipeThreshold * this.getSize().height) {
+          this.wrapper.goToPrevious();
+          return;
+        }
+      }
+    }
+    this.wrapper.goToCurrent();
   }
 
   onSwipeLeft(event: any) {

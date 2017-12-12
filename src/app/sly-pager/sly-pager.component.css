@@ -5,17 +5,5 @@
   position: absolute;
   padding: 0;
   margin: 0;
-}
-.sly-pager-wrapper{
-  display: block;
-  width: auto;
-  height: 100%;
-  position: absolute;
-  background-color: brown;
-}
-.sly-pager-page{
-  width: 100%;
-  height: 100%;
-  color: white;
-  position: absolute;
+  overflow: hidden;
 }
