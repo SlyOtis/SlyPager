@@ -1,11 +1,11 @@
 import {
   AfterViewInit,
-  Component, ElementRef, HostBinding, HostListener, Inject, Input, OnInit, Renderer2,
-  ViewChild, ViewChildren
+  Component, ComponentFactoryResolver, ElementRef, HostBinding, HostListener, Inject, Input, OnInit, Renderer2,
+  ViewChild, ViewChildren, ViewContainerRef
 } from '@angular/core';
 import * as Hammer from 'hammerjs';
 
-export interface SlyPagePage {
+export interface SlyPagerPage {
   element: HTMLElement;
   index?: number;
   pageNumber: number;
@@ -22,12 +22,14 @@ export enum SlyPagerDirection {
 })
 export class SlyPagerComponent implements OnInit, AfterViewInit {
 
+  @ViewChild('sly-pager-wrapper', { read: ViewContainerRef }) wrapperRef: ViewContainerRef;
+
   private _swipeThreshold = 0.10;
   private _scrollDirection: SlyPagerDirection = SlyPagerDirection.DIRECTION_HORIZONTAL;
   private hammer: HammerManager;
   private _wrapper: HTMLElement;
   private _container: HTMLElement;
-  private _pages: SlyPagePage[];
+  private _pages: SlyPagerPage[];
   private _pageIndex: number;
   private _index: number;
   private _maxItemCount: number;
@@ -45,6 +47,7 @@ export class SlyPagerComponent implements OnInit, AfterViewInit {
     return this._scrollDirection;
   }
 
+
   set scrollDirection(value: SlyPagerDirection) {
     this.setScrollDirection(value);
   }
@@ -59,7 +62,8 @@ export class SlyPagerComponent implements OnInit, AfterViewInit {
   }
 
   constructor(private elRef: ElementRef,
-              private renderer: Renderer2) {
+              private renderer: Renderer2,
+              private resolver: ComponentFactoryResolver) {
   }
 
   ngOnInit() {
@@ -109,7 +113,7 @@ export class SlyPagerComponent implements OnInit, AfterViewInit {
 
   }
 
-  private setPagePosAndSize(page: SlyPagePage): SlyPagePage {
+  private setPagePosAndSize(page: SlyPagerPage): SlyPagerPage {
     this.renderer.setStyle(page.element, 'width', this._container.offsetWidth + 'px');
     this.renderer.setStyle(page.element, 'height', this._container.offsetHeight + 'px');
     this.renderer.setStyle(page.element, 'left', this._container.offsetWidth * page.pageNumber + 'px');
