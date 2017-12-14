@@ -44,10 +44,7 @@ export class SlyPagerComponent implements OnInit, AfterViewInit {
     onBindComponent: (index, component) => {
 
     },
-    mode: 'infinite',
-    size: () => {
-      return this.getSize();
-    }
+    mode: 'infinite'
   };
 
   @HostListener('window:resize', ['$event'])

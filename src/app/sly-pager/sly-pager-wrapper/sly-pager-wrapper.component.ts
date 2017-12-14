@@ -15,6 +15,7 @@ export interface SlyPagerPage {
   index: SlyPagerIndex;
   compIndex: number;
   componentRef: ComponentRef<{}>;
+  isRecycled: boolean;
 }
 export interface SlyPagerWrapperConfig {
   startIndex: SlyPagerIndex;
@@ -24,7 +25,7 @@ export interface SlyPagerWrapperConfig {
   onWindowEndReached: (overshoot: number, currWindow: SlyPagerWindow) => SlyPagerIndex;
   scrollDirection: 'vertical' | 'horizontal';
   mode: 'loop' | 'infinite';
-  size: () => {width: number, height: number};
+  blockOnAnimate: boolean;
 }
 @Component({
   selector: 'app-sly-pager-wrapper,[SlyPagerWrapper]',
@@ -34,26 +35,29 @@ export interface SlyPagerWrapperConfig {
 export class SlyPagerWrapperComponent implements OnInit {
 
   @Input() config: SlyPagerWrapperConfig;
-  @ViewChild('wrapper', {read: ViewContainerRef}) vcr: ViewContainerRef;
+  @ViewChild('viewContainerRef', {read: ViewContainerRef}) vcr: ViewContainerRef;
+  @ViewChild('wrapper') wrapperRef: ElementRef;
 
-  private maxComponentCount = 5;
+  private maxPageCount = 5;
+  private pages: SlyPagerPage[];
   private itemIndex: SlyPagerIndex;
-  private componentIndex: number;
-  private componentCenter: number;
+  private pageIndex: number;
+  private nextPageIndex: number;
+  private pageCenter: number;
   private printLog = true;
-  private size: {width: number, height: number};
   private refSize: number;
   private refSide: string;
   private refTrans: string;
+  private isAnimating: boolean;
 
-  constructor(private element: ElementRef,
+  constructor(private hostElRef: ElementRef,
               private renderer: Renderer2,
               private resolver: ComponentFactoryResolver) {
   }
 
 
   ngOnInit(): void {
-    this.print(`maxComponentCount: ${this.maxComponentCount}`);
+    this.print(`maxComponentCount: ${this.maxPageCount}`);
     this.initialize();
   }
 
@@ -77,35 +81,46 @@ export class SlyPagerWrapperComponent implements OnInit {
   }
 
   public goToPrevious() {
-    this.scrollToIndex(this.componentIndex - 1);
+    this.scrollToComponent(this.nextPageIndex = this.pageIndex - 1);
   }
 
   public goToNext() {
-    this.scrollToIndex(this.componentIndex + 1);
+    this.scrollToComponent(this.nextPageIndex = this.pageIndex + 1);
   }
 
   public goToCurrent() {
-    this.scrollToIndex(this.componentIndex);
+    this.scrollToComponent(this.pageIndex);
   }
 
   public scrollToIndex(index: number) {
-    this.renderer.setStyle(this.element.nativeElement, 'transform', `${this.refTrans}(0px)` );
-    this.renderer.setStyle(this.element.nativeElement, '-webkit-transition', '1s ease-in-out');
-    this.renderer.setStyle(this.element.nativeElement, '-moz-transition', '1s ease-in-out');
-    this.renderer.setStyle(this.element.nativeElement, '-o-transition', '1s ease-in-out');
-    this.renderer.setStyle(this.element.nativeElement, 'transition', '1s ease-in-out');
-    this.renderer.setStyle(this.element.nativeElement, this.refSide, - (this.refSize * index) + 'px');
+    // TODO:: Fix this for indexes
+    this.scrollToComponent(index);
   }
 
   public setTranslation(translation: number) {
-    this.renderer.setStyle(this.element.nativeElement, 'transform', `${this.refTrans}(${translation}px)`);
+    if (this.config.blockOnAnimate && this.isAnimating) {
+      return;
+    }
+
+    this.removeWrapperAnimations();
+    this.setWrapperStyle( 'transform', `${this.refTrans}(${translation}px)`);
+  }
+
+  private scrollToComponent(index: number) {
+
+    // TODO:: Implement other vairations than infinite
+    this.print(`Scrolling to page: ${index}`);
+    this.removeWrapperAnimations(true);
+    this.setWrapperStyle( 'transform', `${this.refTrans}(0)` );
+    this.addWrapperAnimations();
+    this.setWrapperStyle( this.refSide, - (this.refSize * index) + 'px');
   }
 
   private initIndexes() {
     switch (this.config.mode) {
       case 'loop': {
         this.print('Wrapper set to loop mode');
-        this.maxComponentCount = Math.min(this.maxComponentCount, this.config.startIndex.window.size);
+        this.maxPageCount = Math.min(this.maxPageCount, this.config.startIndex.window.size);
         break;
       }
       case 'infinite':
@@ -115,21 +130,21 @@ export class SlyPagerWrapperComponent implements OnInit {
       }
     }
 
-    this.size = this.config.size();
 
     if (this.config.scrollDirection === 'vertical') {
-      this.refSize = this.size.height;
+      this.refSize = this.hostElRef.nativeElement.offsetHeight;
       this.refSide = 'top';
       this.refTrans = 'translateY';
     } else {
-      this.refSize = this.size.width;
+      this.refSize = this.hostElRef.nativeElement.offsetWidth;
       this.refSide = 'left';
       this.refTrans = 'translateX';
     }
 
-    this.componentCenter = Math.floor(this.maxComponentCount / 2);
-    this.componentIndex = this.componentCenter = this.isEven(this.componentCenter)
-      ? this.componentCenter + 1 : this.componentCenter;
+    this.print(`Ref side: ${this.refSide} \n Ref size: ${this.refSize} \n Ref trans: ${this.refTrans}`);
+
+    this.pageCenter = Math.floor(this.maxPageCount / 2);
+    this.pageIndex = this.pageCenter;
     this.itemIndex = this.config.startIndex;
   }
 
@@ -137,14 +152,14 @@ export class SlyPagerWrapperComponent implements OnInit {
     this.vcr.clear();
 
     // INFINTE support per now
-    const startIndex = this.itemIndex.index - this.componentCenter;
+    const startIndex = this.itemIndex.index - this.pageCenter;
     let currIndex = this.itemIndex;
 
     if (startIndex < 0) {
       currIndex = this.onStartReached(Math.abs(startIndex));
     }
 
-    for (let i = 0; i < this.maxComponentCount; i++) {
+    for (let i = 0; i < this.maxPageCount; i++) {
       if (currIndex.index >= currIndex.window.size) {
         currIndex = this.onEndReached(Math.abs(currIndex.index - currIndex.window.size), currIndex.window);
       }
@@ -160,47 +175,102 @@ export class SlyPagerWrapperComponent implements OnInit {
   }
 
   private initWrapper() {
+
+    this.print(`The offset width: ${this.hostElRef.nativeElement.offsetHeight}`);
+
     if (this.config.scrollDirection === 'vertical') {
-      this.renderer.setStyle(this.element.nativeElement, 'height', this.maxComponentCount * this.refSize + 'px');
-      this.renderer.setStyle(this.element.nativeElement, 'width', '100%');
+      this.setWrapperStyle('height', this.maxPageCount * this.refSize + 'px');
+      this.setWrapperStyle('width', '100%');
     } else {
-      this.renderer.setStyle(this.element.nativeElement, 'width', this.maxComponentCount * this.refSize + 'px');
-      this.renderer.setStyle(this.element.nativeElement, 'height', '100%');
+      this.setWrapperStyle('width', this.maxPageCount * this.refSize + 'px');
+      this.setWrapperStyle('height', '100%');
     }
 
-    this.renderer.setStyle(this.element.nativeElement, this.refSide, - (this.refSize * this.componentIndex) + 'px');
+    this.setWrapperStyle(this.refSide, - (this.refSize * this.pageIndex) + 'px');
 
-    this.renderer.listen(this.element.nativeElement, 'transitionend', (e) => {
+    this.renderer.listen(this.wrapperRef.nativeElement, 'transitionend', (e) => {
       this.onAnimationEnd(e);
     });
+
   }
 
   private onAnimationEnd(event: Event) {
-    this.print(event.type);
+    this.removeWrapperAnimations();
+
+    if (this.nextPageIndex < this.pageIndex) {
+      this.recyclePrevious();
+    } else if (this.nextPageIndex > this.pageIndex) {
+      this.recycleNext();
+    }
+  }
+
+  private recyclePrevious(amount = 1) {
+    this.print('Recycling previous');
+    this.pages = this.pages.map((page, i) => {
+      // SHould never go more than one cycle
+      const shift = page.compIndex + amount;
+      if (shift >= this.maxPageCount) {
+        page.isRecycled = true;
+        page.
+      } else {
+        page.compIndex = shift;
+        page.isRecycled = false;
+      }
+      return page;
+    });
+  }
+
+  private recycleNext(amount = 1) {
+    this.print('Recycling next');
+    this.pages = this.pages.map((page, i) => {
+      // SHould never go more than one cycle
+      if ()
+      const shift = page.compIndex - amount;
+      page.compIndex = shift < 0 ? this.maxPageCount + shift : shift;
+      return page;
+    });
+  }
+
+  private getPage(pageID): SlyPagerPage {
+    this.
   }
 
   private initPageStyle(page: SlyPagerPage, i) {
-    this.setStyle(page, 'background-color', this.getRandomColor());
-    this.setStyle(page, 'position', 'absolute');
-    this.setPageWidth(page, this.size.width);
-    this.setPageHeight(page, this.size.height);
+    this.setPageStyle(page, 'background-color', this.getRandomColor());
+    this.setPageStyle(page, 'position', 'absolute');
+    this.setPageWidth(page, this.hostElRef.nativeElement.offsetWidth);
+    this.setPageHeight(page, this.hostElRef.nativeElement.offsetHeight);
     this.setPagePosition(page, i);
   }
 
   private setPageWidth(page: SlyPagerPage, width: number) {
-    this.setStyle(page, 'width', width + 'px');
+    this.setPageStyle(page, 'width', width + 'px');
   }
 
   private setPageHeight(page: SlyPagerPage, height: number) {
-    this.setStyle(page, 'height', height + 'px');
+    this.setPageStyle(page, 'height', height + 'px');
   }
 
   private setPagePosition(page: SlyPagerPage, position: number) {
-    this.setStyle(page, this.refSide, this.refSize * position + 'px');
+    this.setPageStyle(page, this.refSide, this.refSize * position + 'px');
   }
 
-  private setStyle(page: SlyPagerPage, style: string, value: any) {
+  private setPageStyle(page: SlyPagerPage, style: string, value: any) {
     this.renderer.setStyle(page.componentRef.location.nativeElement, style, value);
+  }
+
+  private addWrapperAnimations(isAnimating = true) {
+    this.isAnimating = isAnimating;
+    this.renderer.addClass(this.wrapperRef.nativeElement, 'animate');
+  }
+
+  private removeWrapperAnimations(isAnimating = false) {
+    this.renderer.removeClass(this.wrapperRef.nativeElement, 'animate');
+    this.isAnimating = isAnimating;
+  }
+
+  private setWrapperStyle(style: string, value: any) {
+    this.renderer.setStyle(this.wrapperRef.nativeElement, style, value);
   }
 
   private onBindPage(page: SlyPagerPage) {
