@@ -3,23 +3,23 @@ import {
   ViewContainerRef
 } from '@angular/core';
 
-export interface SlyPagerWindow {
+export class SlyPagerWindow {
   id: number;
   size: number;
 }
-export interface SlyPagerIndex {
+export class SlyPagerIndex {
   index: number;
   window: SlyPagerWindow;
 }
-export interface SlyPagerPage {
+export class SlyPagerPage {
   index: SlyPagerIndex;
   compIndex: number;
   componentRef: ComponentRef<{}>;
-  isRecycled: boolean;
 }
 export interface SlyPagerWrapperConfig {
   startIndex: SlyPagerIndex;
   onCreateComponent: (index: SlyPagerIndex) => Type<{}>;
+  onIndexChanged?: (index: SlyPagerIndex) => any;
   onBindComponent: (index: SlyPagerIndex, component: any) => void;
   onWindowStartReached: (overshoot: number, currWindow: SlyPagerWindow) => SlyPagerIndex;
   onWindowEndReached: (overshoot: number, currWindow: SlyPagerWindow) => SlyPagerIndex;
@@ -41,7 +41,6 @@ export class SlyPagerWrapperComponent implements OnInit {
   private maxPageCount = 5;
   private pages: SlyPagerPage[];
   private itemIndex: SlyPagerIndex;
-  private pageIndex: number;
   private pageCenter: number;
   private printLog = true;
   private refSize: number;
@@ -80,20 +79,29 @@ export class SlyPagerWrapperComponent implements OnInit {
   }
 
   public goToPrevious() {
-    this.scrollToComponent(this.nextPageIndex = this.pageIndex - 1);
+    this.recyclePrevious();
+    this.scrollToComponent(this.pageCenter - 1);
   }
 
   public goToNext() {
-    this.scrollToComponent(this.nextPageIndex = this.pageIndex + 1);
+    this.recycleNext();
+    this.scrollToComponent(this.pageCenter + 1);
   }
 
   public goToCurrent() {
-    this.scrollToComponent(this.pageIndex);
+    this.scrollToComponent(this.pageCenter);
   }
 
-  public scrollToIndex(index: number) {
+  public scrollToIndex(index: SlyPagerIndex) {
     // TODO:: Fix this for indexes
-    this.scrollToComponent(index);
+    if (this.itemIndex.window.id < index.window.id) {
+
+    } else if (this.itemIndex.window.id > index.window.id) {
+
+    } else {
+
+    }
+
   }
 
   public setTranslation(translation: number) {
@@ -106,13 +114,15 @@ export class SlyPagerWrapperComponent implements OnInit {
   }
 
   private scrollToComponent(index: number) {
-
     // TODO:: Implement other vairations than infinite
-    this.print(`Scrolling to page: ${index}`);
+    this.print(`Scrolling to position: ${index}`);
     this.removeWrapperAnimations(true);
     this.setWrapperStyle( 'transform', `${this.refTrans}(0)` );
     this.addWrapperAnimations();
     this.setWrapperStyle( this.refSide, - (this.refSize * index) + 'px');
+    if (this.itemIndex !== this.pages[index].index) {
+      this.onIndexChanged(this.itemIndex = this.pages[index].index);
+    }
   }
 
   private initIndexes() {
@@ -143,7 +153,6 @@ export class SlyPagerWrapperComponent implements OnInit {
     this.print(`Ref side: ${this.refSide} \n Ref size: ${this.refSize} \n Ref trans: ${this.refTrans}`);
 
     this.pageCenter = Math.floor(this.maxPageCount / 2);
-    this.pageIndex = this.pageCenter;
     this.itemIndex = this.config.startIndex;
   }
 
@@ -164,12 +173,14 @@ export class SlyPagerWrapperComponent implements OnInit {
         currIndex = this.onEndReached(Math.abs(currIndex.index - currIndex.window.size), currIndex.window);
       }
 
-      const page = {index: currIndex, componentRef: this.createComponent(currIndex), compIndex: i, isRecycled: false};
+      const page = {index: currIndex, componentRef: this.createComponent(currIndex), compIndex: i};
       this.onBindPage(page);
 
       this.vcr.insert(page.componentRef.hostView, i);
       this.initPageStyle(page, i);
       this.pages.push(page);
+
+      this.print(`Created page: ${currIndex.index}/${currIndex.window.size}: ${currIndex.window.id}`);
 
       currIndex.index++;
     }
@@ -187,7 +198,7 @@ export class SlyPagerWrapperComponent implements OnInit {
       this.setWrapperStyle('height', '100%');
     }
 
-    this.setWrapperStyle(this.refSide, - (this.refSize * this.pageIndex) + 'px');
+    this.setWrapperStyle(this.refSide, - (this.refSize * this.pageCenter) + 'px');
 
     this.renderer.listen(this.wrapperRef.nativeElement, 'transitionend', (e) => {
       this.onAnimationEnd(e);
@@ -196,12 +207,12 @@ export class SlyPagerWrapperComponent implements OnInit {
   }
 
   private onAnimationEnd(event: Event) {
-    if (this.nextPageIndex < this.pageIndex) {
-      this.recyclePrevious();
-    } else if (this.nextPageIndex > this.pageIndex) {
-      this.recycleNext();
-    }
     this.removeWrapperAnimations();
+  }
+
+  private onIndexChanged(index: SlyPagerIndex) {
+    this.print(`Index changed: ${index.index}/${index.window.size}: ${index.window.id}`);
+    this.config.onIndexChanged(index);
   }
 
   private recyclePrevious(amount = 1) {
@@ -209,33 +220,47 @@ export class SlyPagerWrapperComponent implements OnInit {
 
     const start = this.pages[0].index;
     amount = amount > this.pageCenter ? this.pageCenter : amount;
-    this.print(`Ref index:${start}`);
+    this.print(`Ref index: ${start.index}/${start.window.size}: ${start.window.id}`);
 
-    for (let i = 1; i < amount; i++) {
+    for (let i = 0; i < amount; i++) {
       const page = this.pages.pop();
-      this.print(`Recycling page:${page.compIndex}`);
+      this.print(`Recycling page: ${page.compIndex}`);
       page.index = this.decreasePageIndex(start, i);
-      this.print(`Page index: ${page.index}`);
+      this.print(`Page index: ${page.index.index}/${page.index.window.size}: ${page.index.window.id}`);
       this.onBindPage(page);
       this.pages.unshift(page);
     }
+
+    this.pages.forEach((page, i) => {
+      this.print(`Page: ${page.compIndex} => ${i}, Index: ${page.index.index}/${page.index.window.size}: ${page.index.window.id}`);
+      this.setPagePosition(page, i);
+    });
+
+    this.setWrapperStyle(this.refSide, - (this.refSize * (this.pageCenter + amount)) + 'px');
   }
 
   private recycleNext(amount = 1) {
-    this.print('Recycling next');
+    this.print('Recycling Next');
 
     const end = this.pages[this.maxPageCount - 1].index;
     amount = amount > this.pageCenter ? this.pageCenter : amount;
-    this.print(`Ref index:${end}`);
+    this.print(`Ref index: ${end.index}/${end.window.size}: ${end.window.id}`);
 
-    for (let i = 1; i < amount; i++) {
+    for (let i = 0; i < amount; i++) {
       const page = this.pages.shift();
-      this.print(`Recycling page:${page.compIndex}`);
+      this.print(`Recycling page: ${page.compIndex}`);
       page.index = this.increasePageIndex(end, i);
-      this.print(`Page index: ${page.index}`);
+      this.print(`Page index: ${page.index.index}/${page.index.window.size}: ${page.index.window.id}`);
       this.onBindPage(page);
       this.pages.push(page);
     }
+
+    this.pages.forEach((page, i) => {
+      this.print(`Page: ${page.compIndex} => ${i}, Index: ${page.index.index}/${page.index.window.size}: ${page.index.window.id}`);
+      this.setPagePosition(page, i);
+    });
+
+    this.setWrapperStyle(this.refSide, - (this.refSize * (this.pageCenter - amount)) + 'px');
   }
 
   private increasePageIndex(index: SlyPagerIndex, amount: number): SlyPagerIndex {
@@ -311,7 +336,7 @@ export class SlyPagerWrapperComponent implements OnInit {
     return this.vcr.createComponent(factory);
   }
 
-  private print(data: string) {
+  private print(data: any) {
     if (this.printLog) {
       console.log(data);
     }

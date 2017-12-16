@@ -35,17 +35,18 @@ export class SlyPagerComponent implements OnInit, AfterViewInit {
       return SlyPagerPageComponent;
     },
     onWindowEndReached: (overshoot, currWindow) => {
-      return {index: overshoot, window: currWindow};
+      return {index: overshoot, window: {id: currWindow.id + 1, size: 10}};
     },
     onWindowStartReached: (overshoot, currWindow) => {
-      return {index: overshoot, window: currWindow};
+      return {index: 10 - overshoot, window: {id: currWindow.id - 1, size: 10}};
     },
     scrollDirection: 'horizontal',
     onBindComponent: (index, component) => {
-
+      console.log(index);
     },
     mode: 'infinite',
-    blockOnAnimate: true
+    blockOnAnimate: true,
+    onIndexChanged: index => {}
   };
 
   @HostListener('window:resize', ['$event'])
@@ -175,25 +176,25 @@ export class SlyPagerComponent implements OnInit, AfterViewInit {
 
   onPanLeft(event: any) {
     event.preventDefault();
-    console.log('Pan left ' + event.deltaX);
+    // console.log('Pan left ' + event.deltaX);
     this.wrapper.setTranslation(event.deltaX);
   }
 
   onPanRight(event: any) {
     event.preventDefault();
-    console.log('Pan right ' + event.deltaX);
+    // console.log('Pan right ' + event.deltaX);
     this.wrapper.setTranslation(event.deltaX);
   }
 
   onPanUp(event: any) {
     event.preventDefault();
-    console.log('Pan up ' + event.deltaY);
+    // console.log('Pan up ' + event.deltaY);
     this.wrapper.setTranslation(event.deltaY);
   }
 
   onPanDown(event: any) {
     event.preventDefault();
-    console.log('Pan down ' + event.deltaY);
+    // console.log('Pan down ' + event.deltaY);
     this.wrapper.setTranslation(event.deltaY);
   }
 
@@ -230,21 +231,25 @@ export class SlyPagerComponent implements OnInit, AfterViewInit {
   onSwipeLeft(event: any) {
     event.preventDefault();
     console.log('Swipe left ' + event.deltaX);
+    this.wrapper.goToNext();
   }
 
   onSwipeRight(event: any) {
     event.preventDefault();
     console.log('Swipe right ' + event.deltaX);
+    this.wrapper.goToPrevious();
   }
 
   onSwipeUp(event: any) {
     event.preventDefault();
     console.log('Swipe up ' + event.deltaX);
+    this.wrapper.goToNext();
   }
 
   onSwipeDown(event: any) {
     event.preventDefault();
     console.log('Swipe down ' + event.deltaX);
+    this.wrapper.goToPrevious();
   }
 
 }
