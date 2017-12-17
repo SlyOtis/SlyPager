@@ -5,6 +5,7 @@ This project was generated with [Angular CLI](https://github.com/angular/angular
 ## Description
 
 A android recycler-view like view-pager, with support for horizontal and vertical infinite scrolling.
+Made with [HammerJS](https://hammerjs.github.io/)
 
 ## Development server
 
