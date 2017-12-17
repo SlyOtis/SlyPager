@@ -9,6 +9,7 @@ import {SlyPagerConfig} from "./sly-pager/sly-pager.component";
   entryComponents: [SlyPagerPageComponent]
 })
 export class AppComponent {
+  refMoment
   config: SlyPagerConfig = {
     startIndex: {index: 2, window: {id: 0, size: 10}},
     onCreateComponent: (index) => {
@@ -26,6 +27,8 @@ export class AppComponent {
     },
     mode: 'infinite',
     blockOnAnimate: true,
-    onIndexChanged: index => {}
+    onIndexChanged: index => {
+
+    }
   };
 }

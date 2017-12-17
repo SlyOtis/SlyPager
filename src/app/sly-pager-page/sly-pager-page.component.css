@@ -1,4 +1,14 @@
 .test{
   width: 100%;
   height: 100%;
+  justify-content: center;
+}
+p{
+  margin: auto;
+  text-align: center;
+  width: auto;
+  height: auto;
+  padding: 0;
+  justify-content: center;
+  vertical-align: middle;
 }

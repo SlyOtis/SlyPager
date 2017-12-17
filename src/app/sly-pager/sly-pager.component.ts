@@ -22,7 +22,7 @@ export class SlyPagerPage {
 export interface SlyPagerConfig {
   startIndex: SlyPagerIndex;
   onCreateComponent: (index: SlyPagerIndex) => Type<{}>;
-  onIndexChanged?: (index: SlyPagerIndex) => any;
+  onIndexChanged?: (index: SlyPagerIndex, component: any) => any;
   onBindComponent: (index: SlyPagerIndex, component: any) => void;
   onWindowStartReached: (overshoot: number, currWindow: SlyPagerWindow) => SlyPagerIndex;
   onWindowEndReached: (overshoot: number, currWindow: SlyPagerWindow) => SlyPagerIndex;
@@ -225,7 +225,7 @@ export class SlyPagerComponent implements OnInit {
 
     this.recyclePrevious();
     this.scrollToPosition(this._pageCenter - 1);
-    this.setIndexChanged(this._pages[this._pageCenter].index, this._pages[this._pageCenter].compIndex);
+    this.setIndexChanged(this._pages[this._pageCenter]);
   }
   public goToNext() {
     if (this.isScrolling()) {
@@ -233,7 +233,7 @@ export class SlyPagerComponent implements OnInit {
     }
     this.recycleNext();
     this.scrollToPosition(this._pageCenter + 1);
-    this.setIndexChanged(this._pages[this._pageCenter].index, this._pages[this._pageCenter].compIndex);
+    this.setIndexChanged(this._pages[this._pageCenter]);
   }
   public goToCurrent() {
     if (this.isScrolling()) {
@@ -273,11 +273,12 @@ export class SlyPagerComponent implements OnInit {
     this.setWrapperStyle( this._refSide, - (this._refSize * index) + 'px');
   }
 
-  private setIndexChanged(index: SlyPagerIndex, compIndex: number) {
-    this._compIndex = compIndex;
-    this._itemIndex = index;
-    this.print(`Comp index: ${this._compIndex}, Index changed: ${index.index}/${index.window.size}: ${index.window.id}`);
-    this.config.onIndexChanged(index);
+  private setIndexChanged(page: SlyPagerPage) {
+    this._compIndex = page.compIndex;
+    this._itemIndex = page.index;
+    this.print(`Comp index: ${this._compIndex},
+     Index changed: ${page.index.index}/${page.index.window.size}: ${page.index.window.id}`);
+    this.config.onIndexChanged(page.index, page.componentRef.instance);
   }
 
   private recyclePrevious(amount = 1) {

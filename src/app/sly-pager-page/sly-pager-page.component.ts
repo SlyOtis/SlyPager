@@ -7,9 +7,13 @@ import { Component, OnInit } from '@angular/core';
 })
 export class SlyPagerPageComponent implements OnInit {
 
+  text: string;
   constructor() { }
 
   ngOnInit() {
   }
 
+  public setText(text: string) {
+    this.text = text;
+  }
 }
