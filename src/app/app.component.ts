@@ -1,7 +1,7 @@
 import {Component} from '@angular/core';
 import {SlyPagerPageComponent} from './sly-pager-page/sly-pager-page.component';
 import {SlyPagerConfig} from './sly-pager/sly-pager.component';
-import * as moment from "moment";
+import * as moment from 'moment';
 
 @Component({
   selector: 'app-root',

@@ -4,7 +4,6 @@ import {
   ViewChild, ViewContainerRef
 } from '@angular/core';
 import * as Hammer from 'hammerjs';
-import {SlyPagerPageComponent} from '../sly-pager-page/sly-pager-page.component';
 
 export interface SlyPagerWindow {
   id: number;
@@ -93,8 +92,8 @@ export class SlyPagerComponent implements OnInit {
     this._wrapper = this.elRef.nativeElement.querySelector('.sly-pager-wrapper');
     this.initHammer(this._wrapper);
     this.initIndexes();
-    this.initPages();
     this.initWrapper();
+    this.initPages();
     this._state = 'ready';
   }
 
@@ -146,6 +145,10 @@ export class SlyPagerComponent implements OnInit {
       this._pages.push(page);
 
       this.print(`Created page: ${currIndex.index}/${currIndex.window.size}: ${currIndex.window.id}`);
+
+      if (this.config.markIndexChangedOnInitialize) {
+        this.setIndexChanged(page);
+      }
 
       currIndex = this.increasePageIndex(currIndex, 1);
     }
