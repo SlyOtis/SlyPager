@@ -1,9 +1,22 @@
 {
   "name": "sly-pager",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "license": "MIT",
-  "keywords": ["angular", "angular 5", "ng", "ng 4", "recyler", "recycler-view", "recycler view", "ng 5", "angular 4",
-  "view pager", "view", "view-pager", "pager"],
+  "keywords": [
+    "angular",
+    "angular 5",
+    "ng",
+    "ng 4",
+    "recyler",
+    "recycler-view",
+    "recycler view",
+    "ng 5",
+    "angular 4",
+    "view pager",
+    "view",
+    "view-pager",
+    "pager"
+  ],
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
