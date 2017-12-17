@@ -23,8 +23,8 @@ export interface SlyPagerConfig {
   onCreateComponent: (index: SlyPagerIndex) => Type<{}>;
   onIndexChanged?: (index: SlyPagerIndex, component: any) => any;
   onBindComponent: (index: SlyPagerIndex, component: any) => void;
-  onWindowStartReached: (overshoot: number, currWindow: SlyPagerWindow) => SlyPagerIndex;
-  onWindowEndReached: (overshoot: number, currWindow: SlyPagerWindow) => SlyPagerIndex;
+  onWindowStartReached: (overshoot: number, currWindow: SlyPagerWindow) => SlyPagerIndex | false;
+  onWindowEndReached: (overshoot: number, currWindow: SlyPagerWindow) => SlyPagerIndex | false;
   scrollDirection: number; // 24 ' verticcal' | 6 ' horizontal';
   mode: 'loop' | 'infinite';
   blockOnAnimate: boolean;
@@ -45,9 +45,11 @@ export class SlyPagerComponent implements OnInit {
   private _container: HTMLElement;
   private _wrapper: HTMLElement;
   private _maxPageCount = 5;
+  private _outsideRange: {head: boolean, tail: boolean};
   private _pages: SlyPagerPage[];
   private _itemIndex: SlyPagerIndex;
   private _compIndex: number;
+  private _refIndex: number;
   private _pageCenter: number;
   private _isDebugging = false;
   private _refSize: number;
@@ -124,17 +126,16 @@ export class SlyPagerComponent implements OnInit {
 
     this.print(`Ref side: ${this._refSide} \n Ref size: ${this._refSize} \n Ref trans: ${this._refTrans}`);
 
-    this._pageCenter = this._compIndex = Math.floor(this._maxPageCount / 2);
+    this._refIndex = this._pageCenter = this._compIndex = Math.floor(this._maxPageCount / 2);
     this._itemIndex = this.config.startIndex;
   }
   private initPages() {
     this.vcr.clear();
-
-    // INFINTE support per now
-    let currIndex = this.decreasePageIndex(this._itemIndex, this._pageCenter);
+    const start = this.getStartIndex();
+    let currIndex = start.startIndex;
     this._pages = [];
 
-    for (let i = 0; i < this._maxPageCount; i++) {
+    for (let i = 0; i < this._maxPageCount - start.start; i++) {
 
       const page = {index: this.createIndex(currIndex.index, currIndex.window.id, currIndex.window.size),
         componentRef: this.createComponent(currIndex), compIndex: i};
@@ -150,7 +151,8 @@ export class SlyPagerComponent implements OnInit {
         this.setIndexChanged(page);
       }
 
-      currIndex = this.increasePageIndex(currIndex, 1);
+      // TODO:: Fix this
+      currIndex = <SlyPagerIndex>this.increasePageIndex(currIndex, 1);
     }
   }
   private initWrapper() {
@@ -165,7 +167,7 @@ export class SlyPagerComponent implements OnInit {
       this.setWrapperStyle('height', '100%');
     }
 
-    this.setWrapperStyle(this._refSide, - (this._refSize * this._pageCenter) + 'px');
+    this.setWrapperStyle(this._refSide, - (this._refSize * this._refIndex) + 'px');
 
     this.renderer.listen(this._wrapper, 'transitionend', (e) => {
       this.onAnimationEnd(e);
@@ -221,30 +223,36 @@ export class SlyPagerComponent implements OnInit {
     this._hammer.on('swipeup', (ev) => this.onSwipeUp(ev));
     this._hammer.on('swipedown', (ev) => this.onSwipeDown(ev));
   }
-
-
+  private getStartIndex(): {startIndex: SlyPagerIndex, start: number} {
+    // INFINTE support per now
+    for (let i = 0; i < this._pageCenter; i++) {
+      const currIndex = this.decreasePageIndex(this._itemIndex, this._pageCenter - i);
+      if (currIndex) {
+        return {startIndex: currIndex, start: i};
+      }
+    }
+    // TODO:: Add error for no lower index
+    return {startIndex: this._itemIndex, start: 0};
+  }
   public goToPrevious() {
     if (this.isScrolling()) {
       return;
     }
-
-    this.recyclePrevious();
-    this.scrollToPosition(this._pageCenter - 1);
-    this.setIndexChanged(this._pages[this._pageCenter]);
+    this.scrollToPosition(this._refIndex - 1, this._outsideRange.tail = !this.recyclePrevious());
+    this.setIndexChanged(this._pages[this._refIndex]);
   }
   public goToNext() {
     if (this.isScrolling()) {
       return;
     }
-    this.recycleNext();
-    this.scrollToPosition(this._pageCenter + 1);
-    this.setIndexChanged(this._pages[this._pageCenter]);
+    this.scrollToPosition(this._refIndex + 1, this._outsideRange.head = !this.recycleNext());
+    this.setIndexChanged(this._pages[this._refIndex]);
   }
   public goToCurrent() {
     if (this.isScrolling()) {
       return;
     }
-    this.scrollToPosition(this._pageCenter);
+    this.scrollToPosition(this._refIndex, false);
   }
   public isScrolling(): boolean {
     return this._state !== 'ready';
@@ -268,8 +276,12 @@ export class SlyPagerComponent implements OnInit {
     this.removeWrapperAnimations();
     this.setWrapperStyle( 'transform', `${this._refTrans}(${translation}px)`);
   }
-  private scrollToPosition(index: number) {
+  private scrollToPosition(index: number, updateRefIndex: boolean) {
     // TODO:: Implement other vairations than infinite
+    if (updateRefIndex) {
+      this._refIndex = index < 0 ? 0 : index >= this._maxPageCount - 1 ? this._maxPageCount - 1 : index;
+    }
+
     this.print(`Scrolling to position: ${index}`);
     this._state = 'scrolling';
     this.removeWrapperAnimations(true);
@@ -286,7 +298,7 @@ export class SlyPagerComponent implements OnInit {
     this.config.onIndexChanged(page.index, page.componentRef.instance);
   }
 
-  private recyclePrevious(amount = 1) {
+  private recyclePrevious(amount = 1): boolean {
     this.print('Recycling previous');
     this._state = 'recycling';
 
@@ -297,14 +309,21 @@ export class SlyPagerComponent implements OnInit {
     for (let i = 0; i < amount; i++) {
       const page = this._pages.pop();
       this.print(`Recycling page: ${page.compIndex}`);
-      page.index = this.decreasePageIndex(start, i + 1);
-      this.print(`Page index: ${page.index.index}/${page.index.window.size}: ${page.index.window.id}`);
-      this.onBindPage(page);
-      this._pages.unshift(page);
+      const tmp = this.decreasePageIndex(start, i + 1);
+      if (tmp) {
+        page.index = tmp;
+        this.print(`Page index: ${page.index.index}/${page.index.window.size}: ${page.index.window.id}`);
+        this.onBindPage(page);
+        this._pages.unshift(page);
+      } else {
+        this._pages.push(page);
+        return false;
+      }
     }
+    return true;
   }
 
-  private recycleNext(amount = 1) {
+  private recycleNext(amount = 1): boolean {
     this.print('Recycling Next');
     this._state = 'recycling';
 
@@ -315,24 +334,31 @@ export class SlyPagerComponent implements OnInit {
     for (let i = 0; i < amount; i++) {
       const page = this._pages.shift();
       this.print(`Recycling page: ${page.compIndex}`);
-      page.index = this.increasePageIndex(end, i + 1);
-      this.print(`Page index: ${page.index.index}/${page.index.window.size}: ${page.index.window.id}`);
-      this.onBindPage(page);
-      this._pages.push(page);
+      const tmp = this.increasePageIndex(end, i + 1);
+      if (tmp) {
+        page.index = tmp;
+        this.print(`Page index: ${page.index.index}/${page.index.window.size}: ${page.index.window.id}`);
+        this.onBindPage(page);
+        this._pages.push(page);
+      } else {
+        this._pages.unshift(page);
+        return false;
+      }
     }
+    return true;
   }
 
   private positionPages(adjustWrapperPos = true) {
     this._pages.forEach((page, i) => {
       this.print(`Page: ${page.compIndex} => ${i}, Index: ${page.index.index}/${page.index.window.size}: ${page.index.window.id}`);
       this.setPagePosition(page, i);
-      if (i === this._pageCenter) {
-        this.setWrapperStyle(this._refSide, - (this._refSize * this._pageCenter) + 'px');
+      if (i === this._refIndex) {
+        this.setWrapperStyle(this._refSide, - (this._refSize * this._refIndex) + 'px');
       }
     });
   }
 
-  private increasePageIndex(index: SlyPagerIndex, amount: number): SlyPagerIndex {
+  private increasePageIndex(index: SlyPagerIndex, amount: number): SlyPagerIndex | false {
     const next = index.index + amount;
     if (next >= index.window.size) {
       return this.onEndReached( next - index.window.size, index.window);
@@ -340,7 +366,7 @@ export class SlyPagerComponent implements OnInit {
     return this.createIndex(next, index.window.id, index.window.size);
   }
 
-  private decreasePageIndex(index: SlyPagerIndex, amount: number): SlyPagerIndex {
+  private decreasePageIndex(index: SlyPagerIndex, amount: number): SlyPagerIndex | false {
     const prev = index.index - amount;
     if (prev < 0) {
       return this.onStartReached(-prev, index.window);
@@ -393,11 +419,11 @@ export class SlyPagerComponent implements OnInit {
     this.config.onBindComponent(page.index, page.componentRef.instance);
   }
 
-  private onStartReached(overshoot: number, window: SlyPagerWindow = this._itemIndex.window): SlyPagerIndex {
+  private onStartReached(overshoot: number, window: SlyPagerWindow = this._itemIndex.window): SlyPagerIndex | false {
     return this.config.onWindowStartReached(overshoot, window);
   }
 
-  private onEndReached(overshoot: number, window: SlyPagerWindow = this._itemIndex.window): SlyPagerIndex {
+  private onEndReached(overshoot: number, window: SlyPagerWindow = this._itemIndex.window): SlyPagerIndex | false {
     return this.config.onWindowEndReached(overshoot, window);
   }
 
@@ -442,7 +468,7 @@ export class SlyPagerComponent implements OnInit {
       this.setPagePosition(page, i);
     });
 
-    this.setWrapperStyle(this._refSide, - (this._refSize * this._pageCenter) + 'px');
+    this.setWrapperStyle(this._refSide, - (this._refSize * this._refIndex) + 'px');
     this._state = 'ready';
   }
 
