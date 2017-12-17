@@ -2,6 +2,21 @@
   "name": "sly-pager",
   "version": "0.1.11",
   "license": "MIT",
+  "author": "Martin Ottersland",
+  "description": "A recycler-view like view-pager",
+  "homepage": "https://github.com/SlyOtis/SlyPager",
+  "bugs": {
+    "url": "https://github.com/SlyOtis/SlyPager/issues",
+    "email": "issues@rostee.com"
+  },
+  "licenses": [{
+    "type": "MIT",
+    "url": "LICENSE.md"
+  }],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SlyOtis/SlyPager.git"
+  },
   "keywords": [
     "angular",
     "angular 5",
