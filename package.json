@@ -1,6 +1,6 @@
 {
   "name": "sly-pager",
-  "version": "1.0.3",
+  "version": "0.1.3",
   "license": "MIT",
   "keywords": [
     "angular",
@@ -15,7 +15,9 @@
     "view pager",
     "view",
     "view-pager",
-    "pager"
+    "pager",
+    "slyotis",
+    "sly"
   ],
   "scripts": {
     "ng": "ng",
