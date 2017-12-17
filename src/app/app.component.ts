@@ -17,26 +17,31 @@ export class AppComponent {
       return SlyPagerPageComponent;
     },
     onWindowEndReached: (overshoot, currWindow) => {
-      return {index: overshoot, window: {id: currWindow.id + 1, size: 10}};
+      const mom = moment(this.refMoment).add(currWindow.id + 1, 'year');
+      return {index: overshoot, window: {id: currWindow.id + 1, size: mom.isoWeeksInYear()}};
     },
     onWindowStartReached: (overshoot, currWindow) => {
-      return {index: 10 - overshoot, window: {id: currWindow.id - 1, size: 10}};
+      const mom = moment(this.refMoment).subtract(currWindow.id - 1, 'year');
+      return {index: mom.isoWeeksInYear() - overshoot, window: {id: currWindow.id - 1, size: mom.isoWeeksInYear()}};
     },
     scrollDirection: Hammer.DIRECTION_HORIZONTAL,
     onBindComponent: (index, component: SlyPagerPageComponent) => {
-      console.log(index);
-    },
-    mode: 'infinite',
-    blockOnAnimate: true,
-    markIndexChangedOnInitialize: true,
-    onIndexChanged: (index, component: SlyPagerPageComponent) => {
-      let week = moment(this.refMoment).isoWeek(index.index + 1);
+      let week = moment(this.refMoment);
       if (index.window.id > 0) {
         week = week.add(index.window.id, 'years');
       } else if (index.window.id < 0) {
         week = week.subtract(Math.abs(index.window.id), 'years');
       }
+      week = week.isoWeek(index.index + 1);
       component.setText(week);
+      console.log(week);
+      console.log(index);
+      return component;
+    },
+    mode: 'infinite',
+    blockOnAnimate: true,
+    markIndexChangedOnInitialize: true,
+    onIndexChanged: (index, component: SlyPagerPageComponent) => {
     }
   };
 }

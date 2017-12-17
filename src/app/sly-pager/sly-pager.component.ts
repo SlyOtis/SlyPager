@@ -49,7 +49,7 @@ export class SlyPagerComponent implements OnInit {
   private _itemIndex: SlyPagerIndex;
   private _compIndex: number;
   private _pageCenter: number;
-  private _printLog = true;
+  private _isDebugging = false;
   private _refSize: number;
   private _refSide: string;
   private _refTrans: string;
@@ -407,7 +407,7 @@ export class SlyPagerComponent implements OnInit {
   }
 
   private print(data: any) {
-    if (this._printLog) {
+    if (this._isDebugging) {
       console.log(data);
     }
   }

@@ -15,6 +15,6 @@ export class SlyPagerPageComponent implements OnInit {
   }
 
   public setText(text: moment.Moment) {
-    this.text = `Year: ${text.year()}, month: ${text.month()}`;
+    this.text = `Year: ${text.year()}, month: ${text.isoWeek()}`;
   }
 }
