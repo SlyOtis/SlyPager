@@ -28,14 +28,15 @@ export class AppComponent {
     },
     mode: 'infinite',
     blockOnAnimate: true,
+    markIndexChangedOnInitialize: true,
     onIndexChanged: (index, component: SlyPagerPageComponent) => {
-      let week = moment(this.refMoment).isoWeek(index.index);
+      let week = moment(this.refMoment).isoWeek(index.index + 1);
       if (index.window.id > 0) {
         week = week.add(index.window.id, 'years');
       } else if (index.window.id < 0) {
         week = week.subtract(Math.abs(index.window.id), 'years');
       }
-      component.setText(week.toISOString());
+      component.setText(week);
     }
   };
 }

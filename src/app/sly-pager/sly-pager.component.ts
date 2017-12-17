@@ -29,6 +29,7 @@ export interface SlyPagerConfig {
   scrollDirection: number; // 24 ' verticcal' | 6 ' horizontal';
   mode: 'loop' | 'infinite';
   blockOnAnimate: boolean;
+  markIndexChangedOnInitialize: boolean;
 }
 @Component({
   selector: 'app-sly-pager, [app-sly-pager], sly-pager, [sly-pager]',
@@ -39,11 +40,11 @@ export class SlyPagerComponent implements OnInit {
 
   @Input() config: SlyPagerConfig;
   @ViewChild('viewContainerRef', {read: ViewContainerRef}) vcr: ViewContainerRef;
-  @ViewChild('wrapper') wrapperRef: ElementRef;
 
   private _swipeThreshold = 0.75;
   private _hammer: HammerManager;
   private _container: HTMLElement;
+  private _wrapper: HTMLElement;
   private _maxPageCount = 5;
   private _pages: SlyPagerPage[];
   private _itemIndex: SlyPagerIndex;
@@ -89,7 +90,8 @@ export class SlyPagerComponent implements OnInit {
     }
 
     this._container = this.elRef.nativeElement.querySelector('.sly-pager-container');
-    this.initHammer(this.wrapperRef.nativeElement);
+    this._wrapper = this.elRef.nativeElement.querySelector('.sly-pager-wrapper');
+    this.initHammer(this._wrapper);
     this.initIndexes();
     this.initPages();
     this.initWrapper();
@@ -162,7 +164,7 @@ export class SlyPagerComponent implements OnInit {
 
     this.setWrapperStyle(this._refSide, - (this._refSize * this._pageCenter) + 'px');
 
-    this.renderer.listen(this.wrapperRef.nativeElement, 'transitionend', (e) => {
+    this.renderer.listen(this._wrapper, 'transitionend', (e) => {
       this.onAnimationEnd(e);
     });
 
@@ -365,16 +367,16 @@ export class SlyPagerComponent implements OnInit {
 
   private addWrapperAnimations(isAnimating = true) {
     this._isAnimating = isAnimating;
-    this.renderer.addClass(this.wrapperRef.nativeElement, 'animate');
+    this.renderer.addClass(this._wrapper, 'animate');
   }
 
   private removeWrapperAnimations(isAnimating = false) {
-    this.renderer.removeClass(this.wrapperRef.nativeElement, 'animate');
+    this.renderer.removeClass(this._wrapper, 'animate');
     this._isAnimating = isAnimating;
   }
 
   private setWrapperStyle(style: string, value: any) {
-    this.renderer.setStyle(this.wrapperRef.nativeElement, style, value);
+    this.renderer.setStyle(this._wrapper, style, value);
   }
 
 

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import * as moment from "moment";
 
 @Component({
   selector: 'app-sly-pager-page',
@@ -13,7 +14,7 @@ export class SlyPagerPageComponent implements OnInit {
   ngOnInit() {
   }
 
-  public setText(text: string) {
-    this.text = text;
+  public setText(text: moment.Moment) {
+    this.text = `Year: ${text.year()}, month: ${text.month()}`;
   }
 }
