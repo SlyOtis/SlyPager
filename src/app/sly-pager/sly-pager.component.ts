@@ -316,11 +316,9 @@ export class SlyPagerComponent implements OnInit {
     // TODO:: Implement other vairations than infinite
     if (updateRefIndex) {
       if (index < 0) {
-        index = this._refIndex = 0;
+        index = 0;
       } else if (index >= this._maxPageCount) {
-        index = this._refIndex = this._maxPageCount - 1;
-      } else {
-        this._refIndex = index;
+        index  = this._maxPageCount - 1;
       }
     }
 
@@ -329,7 +327,11 @@ export class SlyPagerComponent implements OnInit {
     this.removeWrapperAnimations(true);
     this.setWrapperStyle( 'transform', `${this._refTrans}(0)` );
     this.addWrapperAnimations();
-    this.setWrapperStyle( this._refSide, - (this._refSize * index) + 'px');
+    this.setWrapperStyle( 'transform', `${this._refTrans}(${this._refSize * (this._refIndex - index)}px)`);
+
+    if (updateRefIndex) {
+      this._refIndex = index;
+    }
   }
 
   private setIndexChanged(page: SlyPagerPage) {
@@ -452,10 +454,10 @@ export class SlyPagerComponent implements OnInit {
 
 
   private onAnimationEnd(event: Event) {
-    if (!this._outsideRange) {
-      this.positionPages(true);
-    }
-    this.removeWrapperAnimations();
+    this.removeWrapperAnimations(true);
+    this.setWrapperStyle( 'transform', `${this._refTrans}(0)` );
+    this.positionPages(true);
+    this._isAnimating = false;
     this._state = 'ready';
   }
 
