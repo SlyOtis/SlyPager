@@ -1,6 +1,6 @@
 {
   "name": "sly-pager",
-  "version": "0.1.34",
+  "version": "0.1.35",
   "license": "MIT",
   "author": "Martin Ottersland",
   "description": "A recycler-view like view-pager",
