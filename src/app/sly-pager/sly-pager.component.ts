@@ -20,7 +20,7 @@ export class SlyPagerPage {
 }
 export enum SlyPagerDirection {
   HORIZONTAL = 6,
-  VERTICA = 24
+  VERTICAL = 24
 }
 export interface SlyPagerConfig {
   startIndex: SlyPagerIndex;
