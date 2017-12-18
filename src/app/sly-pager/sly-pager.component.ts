@@ -30,7 +30,6 @@ export interface SlyPagerConfig {
   onWindowStartReached: (overshoot: number, currWindow: SlyPagerWindow) => SlyPagerIndex | false;
   onWindowEndReached: (overshoot: number, currWindow: SlyPagerWindow) => SlyPagerIndex | false;
   scrollDirection: SlyPagerDirection;
-  mode: 'loop' | 'infinite';
   blockOnAnimate: boolean;
   markIndexChangedOnInitialize: boolean;
 }
@@ -104,19 +103,9 @@ export class SlyPagerComponent implements OnInit {
   }
 
   private initIndexes() {
-    switch (this.config.mode) {
-      case 'loop': {
-        this.print('Wrapper set to loop mode');
-        this._maxPageCount = Math.min(this._maxPageCount, this.config.startIndex.window.size);
-        break;
-      }
-      case 'infinite':
-      default: {
-        this._maxPageCount = Math.min(this._maxPageCount, this.config.startIndex.window.size);
-        this.print('Wrapper set to infinite mode');
-        break;
-      }
-    }
+
+    this._maxPageCount = Math.min(this._maxPageCount, this.config.startIndex.window.size);
+    this.print('Wrapper set to infinite mode');
 
 
     if (this.config.scrollDirection === 24) {

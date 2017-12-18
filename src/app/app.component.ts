@@ -26,7 +26,7 @@ export class AppComponent {
       const no = {index: mom.isoWeeksInYear() - overshoot, window: {id: currWindow.id - 1, size: mom.isoWeeksInYear()}};
       return false;
     },
-    scrollDirection: Hammer.DIRECTION_HORIZONTAL,
+    scrollDirection: Hammer.DIRECTION_VERTICAL,
     onBindComponent: (index, component: SlyPagerPageComponent) => {
       let week = moment(this.refMoment);
       if (index.window.id > 0) {
@@ -40,7 +40,6 @@ export class AppComponent {
       console.log(index);
       return component;
     },
-    mode: 'infinite',
     blockOnAnimate: true,
     markIndexChangedOnInitialize: true,
     onIndexChanged: (index, component: SlyPagerPageComponent) => {
