@@ -45,7 +45,7 @@ export class SlyPagerComponent implements OnInit {
   private _container: HTMLElement;
   private _wrapper: HTMLElement;
   private _maxPageCount = 5;
-  private _outsideRange: {head: boolean, tail: boolean};
+  private _outsideRange: boolean;
   private _pages: SlyPagerPage[];
   private _itemIndex: SlyPagerIndex;
   private _compIndex: number;
@@ -129,7 +129,7 @@ export class SlyPagerComponent implements OnInit {
 
     this._refIndex = this._pageCenter = this._compIndex = Math.floor(this._maxPageCount / 2);
     this._itemIndex = this.config.startIndex;
-    this._outsideRange = {head: false, tail: false};
+    this._outsideRange = false;
   }
   private initPages() {
     this.vcr.clear();
@@ -268,10 +268,10 @@ export class SlyPagerComponent implements OnInit {
     if (this.isScrolling()) {
       return;
     }
-    if (this._outsideRange.tail) {
+    if (this._outsideRange) {
       this.scrollToPosition(this._refIndex - 1, true);
     } else {
-      this.scrollToPosition(this._refIndex - 1, this._outsideRange.tail = !this.recyclePrevious());
+      this.scrollToPosition(this._refIndex - 1, this._outsideRange = !this.recyclePrevious());
     }
     this.setIndexChanged(this._pages[this._refIndex]);
   }
@@ -279,10 +279,10 @@ export class SlyPagerComponent implements OnInit {
     if (this.isScrolling()) {
       return;
     }
-    if (this._outsideRange.head) {
+    if (this._outsideRange) {
       this.scrollToPosition(this._refIndex + 1, true);
     } else {
-      this.scrollToPosition(this._refIndex + 1, this._outsideRange.head = !this.recycleNext());
+      this.scrollToPosition(this._refIndex + 1, this._outsideRange = !this.recycleNext());
     }
     this.setIndexChanged(this._pages[this._refIndex]);
   }
@@ -317,7 +317,14 @@ export class SlyPagerComponent implements OnInit {
   private scrollToPosition(index: number, updateRefIndex: boolean) {
     // TODO:: Implement other vairations than infinite
     if (updateRefIndex) {
-      this._refIndex = index < 0 ? 0 : index >= this._maxPageCount - 1 ? this._maxPageCount - 1 : index;
+      if (index < 0) {
+        index = this._refIndex = 0;
+      } else if (index >= this._maxPageCount) {
+        index = this._refIndex = this._maxPageCount - 1;
+      } else {
+        this._refIndex = index;
+      }
+      console.log(this._refIndex);
     }
 
     this.print(`Scrolling to position: ${index}`);
@@ -448,7 +455,9 @@ export class SlyPagerComponent implements OnInit {
 
 
   private onAnimationEnd(event: Event) {
-    this.positionPages(true);
+    if (!this._outsideRange) {
+      this.positionPages(true);
+    }
     this.removeWrapperAnimations();
     this._state = 'ready';
   }
