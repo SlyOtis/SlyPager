@@ -130,8 +130,6 @@ export class SlyPagerComponent implements OnInit {
       this._pages = [];
 
       for (let i = 0; i < this._maxPageCount; i++) {
-
-        console.log(currIndex.window);
         const page = {
           index: this.createIndex(currIndex.index, currIndex.window.id, currIndex.window.size),
           componentRef: this.createComponent(currIndex), compIndex: i
@@ -531,7 +529,6 @@ export class SlyPagerComponent implements OnInit {
 
   onPanLeft(event: any) {
     event.preventDefault();
-    // console.log('Pan left ' + event.deltaX);
     if (Math.abs(event.deltaX) < this._container.offsetWidth) {
       this.setTranslation(event.deltaX);
     }
@@ -539,7 +536,6 @@ export class SlyPagerComponent implements OnInit {
 
   onPanRight(event: any) {
     event.preventDefault();
-    // console.log('Pan right ' + event.deltaX);
     if (Math.abs(event.deltaX) < this._container.offsetWidth) {
       this.setTranslation(event.deltaX);
     }
@@ -547,7 +543,6 @@ export class SlyPagerComponent implements OnInit {
 
   onPanUp(event: any) {
     event.preventDefault();
-    // console.log('Pan up ' + event.deltaY);
     if (Math.abs(event.deltaY) < this._container.offsetHeight) {
       this.setTranslation(event.deltaY);
     }
@@ -555,14 +550,12 @@ export class SlyPagerComponent implements OnInit {
 
   onPanDown(event: any) {
     event.preventDefault();
-    // console.log('Pan down ' + event.deltaY);
     if (Math.abs(event.deltaY) < this._container.offsetHeight) {
       this.setTranslation(event.deltaY);
     }
   }
 
   onPanEndCancel(event: any) {
-    console.log('On pan end');
     event.preventDefault();
     if (this.config.scrollDirection === 6) {
       if (event.deltaX > 0) {
@@ -594,25 +587,21 @@ export class SlyPagerComponent implements OnInit {
 
   onSwipeLeft(event: any) {
     event.preventDefault();
-    console.log('Swipe left ' + event.deltaX);
     this.goToNext();
   }
 
   onSwipeRight(event: any) {
     event.preventDefault();
-    console.log('Swipe right ' + event.deltaX);
     this.goToPrevious();
   }
 
   onSwipeUp(event: any) {
     event.preventDefault();
-    console.log('Swipe up ' + event.deltaX);
     this.goToNext();
   }
 
   onSwipeDown(event: any) {
     event.preventDefault();
-    console.log('Swipe down ' + event.deltaX);
     this.goToPrevious();
   }
 

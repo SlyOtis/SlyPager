@@ -36,8 +36,6 @@ export class AppComponent {
       }
       week = week.isoWeek(index.index + 1);
       component.setText(week);
-      console.log(week);
-      console.log(index);
       return component;
     },
     blockOnAnimate: true,
