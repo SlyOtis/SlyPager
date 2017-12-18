@@ -5,6 +5,12 @@
   "author": "Martin Ottersland",
   "description": "A recycler-view like view-pager",
   "homepage": "https://github.com/SlyOtis/SlyPager",
+  "files": [
+    "dist"
+  ],
+  "directories": {
+    "lib": "dist"
+  },
   "bugs": {
     "url": "https://github.com/SlyOtis/SlyPager/issues",
     "email": "issues@rostee.com"
