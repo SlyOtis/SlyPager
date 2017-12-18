@@ -108,6 +108,7 @@ export class SlyPagerComponent implements OnInit {
       }
       case 'infinite':
       default: {
+        this._maxPageCount = Math.min(this._maxPageCount, this.config.startIndex.window.size);
         this.print('Wrapper set to infinite mode');
         break;
       }
@@ -128,31 +129,37 @@ export class SlyPagerComponent implements OnInit {
 
     this._refIndex = this._pageCenter = this._compIndex = Math.floor(this._maxPageCount / 2);
     this._itemIndex = this.config.startIndex;
+    this._outsideRange = {head: false, tail: false};
   }
   private initPages() {
     this.vcr.clear();
-    const start = this.getStartIndex();
-    let currIndex = start.startIndex;
-    this._pages = [];
+    let currIndex = this.getStartIndex();
+    console.log(currIndex);
+    if (currIndex) {
+      this._pages = [];
 
-    for (let i = 0; i < this._maxPageCount - start.start; i++) {
+      for (let i = 0; i < this._maxPageCount; i++) {
 
-      const page = {index: this.createIndex(currIndex.index, currIndex.window.id, currIndex.window.size),
-        componentRef: this.createComponent(currIndex), compIndex: i};
-      this.onBindPage(page);
+        console.log(currIndex.window);
+        const page = {
+          index: this.createIndex(currIndex.index, currIndex.window.id, currIndex.window.size),
+          componentRef: this.createComponent(currIndex), compIndex: i
+        };
+        this.onBindPage(page);
 
-      this.vcr.insert(page.componentRef.hostView, i);
-      this.initPageStyle(page, i);
-      this._pages.push(page);
+        this.vcr.insert(page.componentRef.hostView, i);
+        this.initPageStyle(page, i);
+        this._pages.push(page);
 
-      this.print(`Created page: ${currIndex.index}/${currIndex.window.size}: ${currIndex.window.id}`);
+        this.print(`Created page: ${currIndex.index}/${currIndex.window.size}: ${currIndex.window.id}`);
 
-      if (this.config.markIndexChangedOnInitialize) {
-        this.setIndexChanged(page);
+        if (this.config.markIndexChangedOnInitialize) {
+          this.setIndexChanged(page);
+        }
+
+        // TODO:: Fix this
+        currIndex = <SlyPagerIndex>this.increasePageIndex(currIndex, 1);
       }
-
-      // TODO:: Fix this
-      currIndex = <SlyPagerIndex>this.increasePageIndex(currIndex, 1);
     }
   }
   private initWrapper() {
@@ -223,29 +230,60 @@ export class SlyPagerComponent implements OnInit {
     this._hammer.on('swipeup', (ev) => this.onSwipeUp(ev));
     this._hammer.on('swipedown', (ev) => this.onSwipeDown(ev));
   }
-  private getStartIndex(): {startIndex: SlyPagerIndex, start: number} {
+  private getStartIndex(): SlyPagerIndex | false {
     // INFINTE support per now
-    for (let i = 0; i < this._pageCenter; i++) {
-      const currIndex = this.decreasePageIndex(this._itemIndex, this._pageCenter - i);
-      if (currIndex) {
-        return {startIndex: currIndex, start: i};
+    // TODO:: Must fix this
+    let start = this.decreasePageIndex(this._itemIndex, this._pageCenter);
+    let end = this.increasePageIndex(this._itemIndex, this._pageCenter);
+    if (start && end) {
+      return start;
+    } else if (end) {
+      if (start = this.decreasePageIndex(end, this._maxPageCount - 1)) {
+        return start;
+      } else {
+        for (let i = 0; i < this._maxPageCount; i++) {
+          end = this.increasePageIndex(<SlyPagerIndex>end, 1);
+          if (start = this.decreasePageIndex(<SlyPagerIndex>end, this._maxPageCount - 1)) {
+            return start;
+          }
+        }
+        return false;
+      }
+    } else if (start) {
+      if (end = this.increasePageIndex(start, this._maxPageCount - 1)) {
+        return end;
+      } else {
+        for (let i = 0; i < this._maxPageCount; i++) {
+          start = this.decreasePageIndex(<SlyPagerIndex>start, 1);
+          if (end = this.increasePageIndex(<SlyPagerIndex>start, this._maxPageCount - 1)) {
+            return start;
+          }
+        }
+        return false;
       }
     }
-    // TODO:: Add error for no lower index
-    return {startIndex: this._itemIndex, start: 0};
+    return false;
   }
   public goToPrevious() {
     if (this.isScrolling()) {
       return;
     }
-    this.scrollToPosition(this._refIndex - 1, this._outsideRange.tail = !this.recyclePrevious());
+    if (this._outsideRange.tail) {
+      this.scrollToPosition(this._refIndex - 1, true);
+    } else {
+      this.scrollToPosition(this._refIndex - 1, this._outsideRange.tail = !this.recyclePrevious());
+    }
     this.setIndexChanged(this._pages[this._refIndex]);
   }
   public goToNext() {
     if (this.isScrolling()) {
       return;
     }
-    this.scrollToPosition(this._refIndex + 1, this._outsideRange.head = !this.recycleNext());
+    if (this._outsideRange.head) {
+      this.scrollToPosition(this._refIndex + 1, true);
+    } else {
+      this.scrollToPosition(this._refIndex + 1, this._outsideRange.head = !this.recycleNext());
+    }
     this.setIndexChanged(this._pages[this._refIndex]);
   }
   public goToCurrent() {

@@ -18,11 +18,13 @@ export class AppComponent {
     },
     onWindowEndReached: (overshoot, currWindow) => {
       const mom = moment(this.refMoment).add(currWindow.id + 1, 'year');
-      return {index: overshoot, window: {id: currWindow.id + 1, size: mom.isoWeeksInYear()}};
+      const no = {index: overshoot, window: {id: currWindow.id + 1, size: mom.isoWeeksInYear()}};
+      return false;
     },
     onWindowStartReached: (overshoot, currWindow) => {
       const mom = moment(this.refMoment).subtract(currWindow.id - 1, 'year');
-      return {index: mom.isoWeeksInYear() - overshoot, window: {id: currWindow.id - 1, size: mom.isoWeeksInYear()}};
+      const no = {index: mom.isoWeeksInYear() - overshoot, window: {id: currWindow.id - 1, size: mom.isoWeeksInYear()}};
+      return false;
     },
     scrollDirection: Hammer.DIRECTION_HORIZONTAL,
     onBindComponent: (index, component: SlyPagerPageComponent) => {
