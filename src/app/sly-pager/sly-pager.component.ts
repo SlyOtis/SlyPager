@@ -129,12 +129,10 @@ export class SlyPagerComponent implements OnInit {
 
     this._refIndex = this._pageCenter = this._compIndex = Math.floor(this._maxPageCount / 2);
     this._itemIndex = this.config.startIndex;
-    this._outsideRange = false;
   }
   private initPages() {
     this.vcr.clear();
     let currIndex = this.getStartIndex();
-    console.log(currIndex);
     if (currIndex) {
       this._pages = [];
 
@@ -268,7 +266,7 @@ export class SlyPagerComponent implements OnInit {
     if (this.isScrolling()) {
       return;
     }
-    if (this._outsideRange) {
+    if (this._refIndex !== this._pageCenter) {
       this.scrollToPosition(this._refIndex - 1, true);
     } else {
       this.scrollToPosition(this._refIndex - 1, this._outsideRange = !this.recyclePrevious());
@@ -279,7 +277,7 @@ export class SlyPagerComponent implements OnInit {
     if (this.isScrolling()) {
       return;
     }
-    if (this._outsideRange) {
+    if (this._refIndex !== this._pageCenter) {
       this.scrollToPosition(this._refIndex + 1, true);
     } else {
       this.scrollToPosition(this._refIndex + 1, this._outsideRange = !this.recycleNext());
@@ -324,7 +322,6 @@ export class SlyPagerComponent implements OnInit {
       } else {
         this._refIndex = index;
       }
-      console.log(this._refIndex);
     }
 
     this.print(`Scrolling to position: ${index}`);
