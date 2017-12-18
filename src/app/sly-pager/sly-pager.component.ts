@@ -18,6 +18,10 @@ export class SlyPagerPage {
   compIndex: number;
   componentRef: ComponentRef<{}>;
 }
+export enum SlyPagerDirection {
+  HORIZONTAL = 6,
+  VERTICA = 24
+}
 export interface SlyPagerConfig {
   startIndex: SlyPagerIndex;
   onCreateComponent: (index: SlyPagerIndex) => Type<{}>;
@@ -25,7 +29,7 @@ export interface SlyPagerConfig {
   onBindComponent: (index: SlyPagerIndex, component: any) => void;
   onWindowStartReached: (overshoot: number, currWindow: SlyPagerWindow) => SlyPagerIndex | false;
   onWindowEndReached: (overshoot: number, currWindow: SlyPagerWindow) => SlyPagerIndex | false;
-  scrollDirection: number; // 24 ' verticcal' | 6 ' horizontal';
+  scrollDirection: SlyPagerDirection;
   mode: 'loop' | 'infinite';
   blockOnAnimate: boolean;
   markIndexChangedOnInitialize: boolean;
